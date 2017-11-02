@@ -74,7 +74,6 @@ func HandleIdp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Info("unmarshal xml")
 	response := saml.Response{}
 	err = xml.Unmarshal(buf, &response)
 
@@ -84,36 +83,34 @@ func HandleIdp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-
-	log.Info("validating saml response")
-
 	response.OriginalString = string(buf)
 
 	serviceProviderSettings := saml.ServiceProviderSettings{
-		PublicCertPath:              "/tmp/foo.txt",
-		PrivateKeyPath:              "something",
-		IdpPublicCertPath:           "/go/okta.cert",
-		AssertionConsumerServiceUrl: "http://f4540b65.ngrok.io/saml/sso/eample-okta-com",
-		IdpSsoDescriptorUrl:         "http://www.okta.com/exkckxgy6sHOM46AL0h7",
-		IdpSsoUrl:                   "https://dev-580463.oktapreview.com/app/workivadev580463_deleteme_3/exkckxgy6sHOM46AL0h7/sso/saml",
+		// These are specific to validation with saml.oktadev.com form, you must use something like ngrok to expose the local service
+		// oktadev public cert
+		IdpPublicCertPath:           "/tmp/oktadev.pem",
+		// use this when exposing a local running instance to the interwebs
+		AssertionConsumerServiceUrl: "http://dd9ae6b8.ngrok.io/saml/sso/test",
+		// These are needed for integrating with okta developer app
+		//IdpSsoDescriptorUrl:         "http://www.okta.com/exkckxgy6sHOM46AL0h7",
+		//IdpSsoUrl:                   "https://dev-580463.oktapreview.com/app/workivadev580463_deleteme_3/exkckxgy6sHOM46AL0h7/sso/saml",
 		SpSignRequest:               true,
 	}
 
 	err = response.Authenticate(&serviceProviderSettings)
 
 	if err != nil {
-		log.Warn("SAML Response validation failed", err)
 		http.Error(w, "Unauthorized", 401)
 		return
 	}
 
-	samlId := response.GetAttribute("uid")
-
-	if samlId == "" {
-		log.Warn("SAML Response missing uid attribute!!!")
-		http.Error(w, "Unauthorized", 401)
-		return
-	}
+	//samlId := response.GetAttribute("uid")
+	//
+	//if samlId == "" {
+	//	log.Warn("SAML Response missing uid attribute!!!")
+	//	http.Error(w, "Unauthorized", 401)
+	//	return
+	//}
 
 	log.Info("I guess this means everything is a-ok???")
 

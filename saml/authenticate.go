@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const xmlResponseID = "urn:oasis:names:tc:SAML:2.0:protocol:Response"
+const xmlResponseID = "urn:oasis:names:tc:SAML:2.0:assertion:Assertion"
 
 func verify(xml string, publicCertPath string, id string) error {
 	samlXmlSecInput, err := ioutil.TempFile(os.TempDir(), "hello-saml")
@@ -30,12 +30,10 @@ func verify(xml string, publicCertPath string, id string) error {
 	}
 	log.Info(strings.Join(x, " "))
 
-	stdoutStderr, err := exec.Command("xmlsec1", "--verify", "--print-debug", "--pubkey-cert-pem", publicCertPath, "--id-attr:ID", id,
+	// /usr/bin/xmlsec1 --verify --pubkey-cert-pem /tmp/okta.cert --id-attr:ID urn:oasis:names:tc:SAML:2.0:assertion:Assertion /tmp/decoded.xml
+
+	_, err = exec.Command("xmlsec1", "--verify", "--pubkey-cert-pem", publicCertPath, "--id-attr:ID", id,
 		samlXmlSecInput.Name()).CombinedOutput()
-
-	fmt.Printf("%v\n", string(stdoutStderr))
-
-
 
 	if err != nil {
 		return errors.New("Error verifying signature: " + err.Error())
@@ -49,8 +47,6 @@ func VerifyResponseSignature(xml string, publicCertPath string) error {
 }
 
 func (r *Response) Authenticate(s *ServiceProviderSettings) error {
-
-	log.Info("Authenticating response")
 	if r.Version != "2.0" {
 		return errors.New("unsupported SAML Version")
 	}
